@@ -5,6 +5,7 @@ import { generateScript } from "./generator/python.ts";
 import { downloadZip } from "./generator/zip.ts";
 import { useMidi } from "./midi/useMidi.ts";
 import { loadMapping, saveMapping, isOnboarded, setOnboarded } from "./lib/store.ts";
+import { useI18n } from "./i18n/lang.tsx";
 import { Header } from "./components/Header.tsx";
 import { DevicePanel } from "./components/DevicePanel.tsx";
 import { Inspector } from "./components/Inspector.tsx";
@@ -27,13 +28,14 @@ export default function App() {
   const [exporting, setExporting] = useState(false);
   const learnToken = useRef(0);
 
+  const { t, lang } = useI18n();
   const midi = useMidi();
 
   useEffect(() => {
     saveMapping(mapping);
   }, [mapping]);
 
-  const generated = useMemo(() => generateScript(mapping, device), [mapping, device]);
+  const generated = useMemo(() => generateScript(mapping, device, lang), [mapping, device, lang]);
 
   const patchControl = useCallback(
     (id: string, patch: Partial<{ binding: MidiBinding; targetId: string }>) => {
@@ -69,11 +71,10 @@ export default function App() {
   }, [midi]);
 
   const resetAll = useCallback(() => {
-    if (!confirm("Réinitialiser tout le mappage aux valeurs par défaut du nanoKONTROL Studio ?"))
-      return;
+    if (!confirm(t("app.resetConfirm"))) return;
     setMapping(defaultMapping(device));
     setSelectedId("fader.1");
-  }, [device]);
+  }, [device, t]);
 
   const onExport = useCallback(async () => {
     setExporting(true);
@@ -139,13 +140,13 @@ export default function App() {
           <section className="panel overflow-hidden">
             <div className="flex items-center gap-1 border-b border-desk-edge bg-desk-rail/60 px-3 py-2">
               <TabButton active={tab === "code"} onClick={() => setTab("code")}>
-                Aperçu du script
+                {t("tab.code")}
               </TabButton>
               <TabButton active={tab === "monitor"} onClick={() => setTab("monitor")}>
-                Moniteur MIDI
+                {t("tab.monitor")}
               </TabButton>
               <TabButton active={tab === "install"} onClick={() => setTab("install")}>
-                Installation
+                {t("tab.install")}
               </TabButton>
               <div className="ml-auto pr-1 text-[11px] font-mono text-ink-dim">
                 {generated.scriptName}.py

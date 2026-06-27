@@ -117,7 +117,7 @@ describe("generateScript — edge cases", () => {
     const mapping: Mapping = defaultMapping(NANOKONTROL_STUDIO);
     mapping.controls["transport.play"].targetId = "strip.mute"; // a button, but no strip
     const result = generateScript(mapping, NANOKONTROL_STUDIO);
-    expect(result.warnings.some((w) => w.includes("pas de piste"))).toBe(true);
+    expect(result.warnings.some((w) => w.includes("no track"))).toBe(true);
   });
 
   it("warns when a continuous control is given a button-only target", () => {

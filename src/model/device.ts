@@ -7,8 +7,10 @@
 // your unit actually sends, or load the matching Kontrol Editor scene.
 
 import type { ControlDef, DeviceDef, MidiBinding } from "./types";
+import type { Loc } from "../i18n/core.ts";
 
 const cc = (number: number, channel = 0): MidiBinding => ({ type: "cc", channel, number });
+const L = (en: string, fr: string): Loc => ({ en, fr });
 
 const STRIPS = 8;
 
@@ -18,7 +20,7 @@ function stripControls(): ControlDef[] {
     const s = i - 1;
     out.push({
       id: `fader.${i}`,
-      label: `Fader ${i}`,
+      label: L(`Fader ${i}`, `Fader ${i}`),
       short: "FADER",
       kind: "fader",
       group: "strip",
@@ -28,7 +30,7 @@ function stripControls(): ControlDef[] {
     });
     out.push({
       id: `knob.${i}`,
-      label: `Potentiomètre ${i}`,
+      label: L(`Knob ${i}`, `Potentiomètre ${i}`),
       short: "KNOB",
       kind: "knob",
       group: "strip",
@@ -38,7 +40,7 @@ function stripControls(): ControlDef[] {
     });
     out.push({
       id: `solo.${i}`,
-      label: `Solo ${i}`,
+      label: L(`Solo ${i}`, `Solo ${i}`),
       short: "S",
       kind: "button",
       group: "strip",
@@ -48,7 +50,7 @@ function stripControls(): ControlDef[] {
     });
     out.push({
       id: `mute.${i}`,
-      label: `Mute ${i}`,
+      label: L(`Mute ${i}`, `Mute ${i}`),
       short: "M",
       kind: "button",
       group: "strip",
@@ -58,7 +60,7 @@ function stripControls(): ControlDef[] {
     });
     out.push({
       id: `rec.${i}`,
-      label: `Rec ${i}`,
+      label: L(`Rec ${i}`, `Rec ${i}`),
       short: "R",
       kind: "button",
       group: "strip",
@@ -71,20 +73,20 @@ function stripControls(): ControlDef[] {
 }
 
 const transportControls: ControlDef[] = [
-  { id: "transport.rewind", label: "Retour", short: "◀◀", kind: "button", group: "transport", defaultBinding: cc(43), defaultTarget: "transport.seek_rew" },
-  { id: "transport.ff", label: "Avance", short: "▶▶", kind: "button", group: "transport", defaultBinding: cc(44), defaultTarget: "transport.seek_ff" },
-  { id: "transport.stop", label: "Stop", short: "■", kind: "button", group: "transport", defaultBinding: cc(42), defaultTarget: "transport.stop" },
-  { id: "transport.play", label: "Lecture", short: "▶", kind: "button", group: "transport", defaultBinding: cc(41), defaultTarget: "transport.play" },
-  { id: "transport.record", label: "Enregistrement", short: "●", kind: "button", group: "transport", defaultBinding: cc(45), defaultTarget: "transport.record" },
-  { id: "transport.cycle", label: "Cycle", short: "↺", kind: "button", group: "transport", defaultBinding: cc(46), defaultTarget: "transport.loop" },
+  { id: "transport.rewind", label: L("Rewind", "Retour"), short: "◀◀", kind: "button", group: "transport", defaultBinding: cc(43), defaultTarget: "transport.seek_rew" },
+  { id: "transport.ff", label: L("Forward", "Avance"), short: "▶▶", kind: "button", group: "transport", defaultBinding: cc(44), defaultTarget: "transport.seek_ff" },
+  { id: "transport.stop", label: L("Stop", "Stop"), short: "■", kind: "button", group: "transport", defaultBinding: cc(42), defaultTarget: "transport.stop" },
+  { id: "transport.play", label: L("Play", "Lecture"), short: "▶", kind: "button", group: "transport", defaultBinding: cc(41), defaultTarget: "transport.play" },
+  { id: "transport.record", label: L("Record", "Enregistrement"), short: "●", kind: "button", group: "transport", defaultBinding: cc(45), defaultTarget: "transport.record" },
+  { id: "transport.cycle", label: L("Cycle", "Cycle"), short: "↺", kind: "button", group: "transport", defaultBinding: cc(46), defaultTarget: "transport.loop" },
 ];
 
 const navControls: ControlDef[] = [
-  { id: "nav.track_prev", label: "Piste ◀", short: "◀", kind: "button", group: "nav", defaultBinding: cc(58), defaultTarget: "nav.track_prev" },
-  { id: "nav.track_next", label: "Piste ▶", short: "▶", kind: "button", group: "nav", defaultBinding: cc(59), defaultTarget: "nav.track_next" },
-  { id: "nav.marker_set", label: "Marqueur ●", short: "SET", kind: "button", group: "nav", defaultBinding: cc(60), defaultTarget: "transport.metronome" },
-  { id: "nav.marker_prev", label: "Marqueur ◀", short: "◀M", kind: "button", group: "nav", defaultBinding: cc(61), defaultTarget: "nav.scene_prev" },
-  { id: "nav.marker_next", label: "Marqueur ▶", short: "▶M", kind: "button", group: "nav", defaultBinding: cc(62), defaultTarget: "nav.scene_next" },
+  { id: "nav.track_prev", label: L("Track ◀", "Piste ◀"), short: "◀", kind: "button", group: "nav", defaultBinding: cc(58), defaultTarget: "nav.track_prev" },
+  { id: "nav.track_next", label: L("Track ▶", "Piste ▶"), short: "▶", kind: "button", group: "nav", defaultBinding: cc(59), defaultTarget: "nav.track_next" },
+  { id: "nav.marker_set", label: L("Marker ●", "Marqueur ●"), short: "SET", kind: "button", group: "nav", defaultBinding: cc(60), defaultTarget: "transport.metronome" },
+  { id: "nav.marker_prev", label: L("Marker ◀", "Marqueur ◀"), short: "◀M", kind: "button", group: "nav", defaultBinding: cc(61), defaultTarget: "nav.scene_prev" },
+  { id: "nav.marker_next", label: L("Marker ▶", "Marqueur ▶"), short: "▶M", kind: "button", group: "nav", defaultBinding: cc(62), defaultTarget: "nav.scene_next" },
 ];
 
 export const NANOKONTROL_STUDIO: DeviceDef = {

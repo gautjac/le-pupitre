@@ -1,21 +1,23 @@
 import type { UseMidi } from "../midi/useMidi.ts";
+import { useI18n } from "../i18n/lang.tsx";
 
 export function MidiMonitor({ midi }: { midi: UseMidi }) {
+  const { t } = useI18n();
   return (
     <div className="p-4">
       <div className="mb-3 grid gap-3 sm:grid-cols-2">
-        <PortList title="Entrées MIDI" ports={midi.inputs} empty="Aucune entrée détectée" />
-        <PortList title="Sorties MIDI (LEDs)" ports={midi.outputs} empty="Aucune sortie détectée" />
+        <PortList title={t("monitor.inputs")} ports={midi.inputs} empty={t("monitor.noInput")} />
+        <PortList title={t("monitor.outputs")} ports={midi.outputs} empty={t("monitor.noOutput")} />
       </div>
 
       <div className="text-[11px] font-mono uppercase tracking-wider text-ink-dim">
-        Flux entrant
+        {t("monitor.incoming")}
       </div>
       <div className="scroll-thin mt-1.5 max-h-[280px] overflow-auto rounded-lg border border-desk-edge bg-desk-black/60">
         {midi.status !== "ready" ? (
-          <Empty>Connecte le MIDI pour voir les messages.</Empty>
+          <Empty>{t("monitor.connectFirst")}</Empty>
         ) : midi.lastEvents.length === 0 ? (
-          <Empty>Bouge un contrôle sur le nanoKONTROL Studio…</Empty>
+          <Empty>{t("monitor.movePrompt")}</Empty>
         ) : (
           <table className="w-full font-mono text-xs">
             <tbody>
@@ -32,9 +34,9 @@ export function MidiMonitor({ midi }: { midi: UseMidi }) {
                       {e.type === "cc" ? "CC" : "NOTE"}
                     </span>
                   </td>
-                  <td className="px-2 py-1.5 text-ink-soft">canal {e.channel + 1}</td>
+                  <td className="px-2 py-1.5 text-ink-soft">{t("monitor.channel", { n: e.channel + 1 })}</td>
                   <td className="px-2 py-1.5 text-ink">#{e.number}</td>
-                  <td className="px-2 py-1.5 text-amber-glow">val {e.value}</td>
+                  <td className="px-2 py-1.5 text-amber-glow">{t("monitor.val", { v: e.value })}</td>
                   <td className="w-1/3 px-3 py-1.5 text-right text-ink-dim">{e.portName}</td>
                 </tr>
               ))}

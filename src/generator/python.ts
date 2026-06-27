@@ -11,6 +11,23 @@
 
 import type { DeviceDef, Mapping, MidiBinding } from "../model/types";
 import { TARGET_BY_ID } from "../model/targets";
+import { loc, type Lang } from "../i18n/core.ts";
+
+type WarnCode = "incompatible" | "noStrip" | "needButton";
+
+function warn(lang: Lang, code: WarnCode, control: string, target: string): string {
+  const en: Record<WarnCode, string> = {
+    incompatible: `"${control}" → "${target}" skipped (incompatible control type).`,
+    noStrip: `"${control}" → "${target}" skipped (no track associated).`,
+    needButton: `"${control}" → "${target}" skipped (a button is required).`,
+  };
+  const fr: Record<WarnCode, string> = {
+    incompatible: `« ${control} » → « ${target} » ignoré (type de contrôle incompatible).`,
+    noStrip: `« ${control} » → « ${target} » ignoré (pas de piste associée).`,
+    needButton: `« ${control} » → « ${target} » ignoré (un bouton est requis).`,
+  };
+  return (lang === "fr" ? fr : en)[code];
+}
 
 export interface GeneratedFile {
   path: string; // relative path inside the zip (includes the script folder)
@@ -47,7 +64,11 @@ interface ElementPlan {
   binding: MidiBinding;
 }
 
-export function generateScript(mapping: Mapping, device: DeviceDef): GenerateResult {
+export function generateScript(
+  mapping: Mapping,
+  device: DeviceDef,
+  lang: Lang = "en",
+): GenerateResult {
   const name = sanitizeScriptName(mapping.scriptName);
   const warnings: string[] = [];
 
@@ -72,17 +93,19 @@ export function generateScript(mapping: Mapping, device: DeviceDef): GenerateRes
     const isContinuous = control.kind === "fader" || control.kind === "knob";
     const stripIdx = control.strip != null ? control.strip - 1 : null;
     const varName = varFor(control.id);
+    const cl = loc(control.label, lang);
+    const tl = loc(target.label, lang);
 
     // Guard: target must suit the physical control.
     if (!target.suits.includes(control.kind)) {
-      warnings.push(`« ${control.label} » → « ${target.label} » ignoré (type de contrôle incompatible).`);
+      warnings.push(warn(lang, "incompatible", cl, tl));
       continue;
     }
 
     switch (w.kind) {
       case "strip_continuous": {
         if (stripIdx == null) {
-          warnings.push(`« ${control.label} » → « ${target.label} » ignoré (pas de piste associée).`);
+          warnings.push(warn(lang, "noStrip", cl, tl));
           continue;
         }
         elements.push({ controlId: control.id, varName, kind: control.kind, binding: state.binding });
@@ -93,7 +116,7 @@ export function generateScript(mapping: Mapping, device: DeviceDef): GenerateRes
       }
       case "strip_send": {
         if (stripIdx == null) {
-          warnings.push(`« ${control.label} » → « ${target.label} » ignoré (pas de piste associée).`);
+          warnings.push(warn(lang, "noStrip", cl, tl));
           continue;
         }
         elements.push({ controlId: control.id, varName, kind: control.kind, binding: state.binding });
@@ -104,7 +127,7 @@ export function generateScript(mapping: Mapping, device: DeviceDef): GenerateRes
       }
       case "strip_button": {
         if (stripIdx == null) {
-          warnings.push(`« ${control.label} » → « ${target.label} » ignoré (pas de piste associée).`);
+          warnings.push(warn(lang, "noStrip", cl, tl));
           continue;
         }
         elements.push({ controlId: control.id, varName, kind: "button", binding: state.binding });
@@ -114,7 +137,7 @@ export function generateScript(mapping: Mapping, device: DeviceDef): GenerateRes
       }
       case "transport_button": {
         if (isContinuous) {
-          warnings.push(`« ${control.label} » → « ${target.label} » ignoré (un bouton est requis).`);
+          warnings.push(warn(lang, "needButton", cl, tl));
           continue;
         }
         elements.push({ controlId: control.id, varName, kind: "button", binding: state.binding });
@@ -124,7 +147,7 @@ export function generateScript(mapping: Mapping, device: DeviceDef): GenerateRes
       }
       case "session_nav": {
         if (isContinuous) {
-          warnings.push(`« ${control.label} » → « ${target.label} » ignoré (un bouton est requis).`);
+          warnings.push(warn(lang, "needButton", cl, tl));
           continue;
         }
         elements.push({ controlId: control.id, varName, kind: "button", binding: state.binding });
@@ -134,7 +157,7 @@ export function generateScript(mapping: Mapping, device: DeviceDef): GenerateRes
       }
       case "song_action": {
         if (isContinuous) {
-          warnings.push(`« ${control.label} » → « ${target.label} » ignoré (un bouton est requis).`);
+          warnings.push(warn(lang, "needButton", cl, tl));
           continue;
         }
         elements.push({ controlId: control.id, varName, kind: "button", binding: state.binding });
@@ -204,7 +227,11 @@ export function generateScript(mapping: Mapping, device: DeviceDef): GenerateRes
   }
 
   if (assignedCount === 0) {
-    warnings.push("Aucun contrôle assigné : le script ne fera rien tel quel.");
+    warnings.push(
+      lang === "fr"
+        ? "Aucun contrôle assigné : le script ne fera rien tel quel."
+        : "No control assigned: the script will do nothing as-is.",
+    );
   }
 
   const header = [
@@ -317,7 +344,7 @@ function buildReadme(name: string, device: DeviceDef, mapping: Mapping): string 
     if (!t || t.wiring.kind === "none") continue;
     const ch = st.binding.channel + 1;
     const typ = st.binding.type.toUpperCase();
-    rows.push(`| ${c.label} | ${typ} ${st.binding.number} (ch ${ch}) | ${t.label} |`);
+    rows.push(`| ${loc(c.label, "en")} | ${typ} ${st.binding.number} (ch ${ch}) | ${loc(t.label, "en")} |`);
   }
   return [
     `# ${name}`,

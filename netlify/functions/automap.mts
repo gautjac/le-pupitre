@@ -21,12 +21,13 @@ export default async (req: Request): Promise<Response> => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
   const body = (await req.json().catch(() => null)) as
-    | { instruction?: string; controls?: Ctrl[]; targets?: Tgt[] }
+    | { instruction?: string; controls?: Ctrl[]; targets?: Tgt[]; lang?: string }
     | null;
 
   const instruction = (body?.instruction ?? "").trim();
   const controls = body?.controls ?? [];
   const targets = body?.targets ?? [];
+  const lang: "en" | "fr" = body?.lang === "fr" ? "fr" : "en";
   if (!instruction || controls.length === 0 || targets.length === 0) {
     return new Response(JSON.stringify({ error: "Bad request" }), {
       status: 400,
@@ -58,15 +59,27 @@ export default async (req: Request): Promise<Response> => {
       };
 
       if (!apiKey) {
-        finish({ assignments: {}, note: "Clé IA absente sur le serveur — édite le mappage à la main." });
+        finish({
+          assignments: {},
+          note:
+            lang === "fr"
+              ? "Clé IA absente sur le serveur — édite le mappage à la main."
+              : "AI key missing on the server — edit the mapping by hand.",
+        });
         return;
       }
 
       try {
-        const result = await propose(apiKey, instruction, controls, targets);
+        const result = await propose(apiKey, instruction, controls, targets, lang);
         finish(result);
       } catch {
-        finish({ assignments: {}, note: "L'assistant IA n'a pas répondu — réessaie ou édite à la main." });
+        finish({
+          assignments: {},
+          note:
+            lang === "fr"
+              ? "L'assistant IA n'a pas répondu — réessaie ou édite à la main."
+              : "The AI assistant didn't respond — retry or edit by hand.",
+        });
       }
     },
   });
@@ -76,7 +89,13 @@ export default async (req: Request): Promise<Response> => {
   });
 };
 
-async function propose(apiKey: string, instruction: string, controls: Ctrl[], targets: Tgt[]) {
+async function propose(
+  apiKey: string,
+  instruction: string,
+  controls: Ctrl[],
+  targets: Tgt[],
+  lang: "en" | "fr",
+) {
   const client = new Anthropic({ apiKey, baseURL: "https://api.anthropic.com" });
 
   const kindById = new Map(controls.map((c) => [c.id, c.kind]));
@@ -100,21 +119,25 @@ async function propose(apiKey: string, instruction: string, controls: Ctrl[], ta
             required: ["controlId", "targetId"],
           },
         },
-        note: { type: "string", description: "One short French sentence summarising the mapping." },
+        note: {
+          type: "string",
+          description: `One short ${lang === "fr" ? "French" : "English"} sentence summarising the mapping.`,
+        },
       },
       required: ["assignments"],
     },
   };
 
   const system = [
-    "Tu configures une surface de contrôle MIDI pour Ableton Live (un Korg nanoKONTROL Studio).",
-    "On te donne la liste des contrôles physiques (avec leur type: fader, knob, button et leur numéro de piste) et la liste des actions Live possibles (avec les types de contrôle qu'elles acceptent).",
-    "Assigne à chaque contrôle pertinent une action via l'outil set_mapping.",
-    "Règles STRICTES:",
-    "- targetId DOIT exister dans la liste des actions.",
-    "- L'action doit accepter le type du contrôle (champ 'suits').",
-    "- Les actions de piste (volume, pan, mute, solo, arm, sélection, envois) doivent aller sur le contrôle de la BONNE piste (respecte le numéro de strip).",
-    "- N'invente jamais d'id. Réponds uniquement via l'outil.",
+    "You configure a MIDI control surface for Ableton Live (a Korg nanoKONTROL Studio).",
+    "You are given the list of physical controls (with their type: fader, knob, button and their track/strip number) and the list of possible Live actions (with the control types they accept in 'suits').",
+    "Assign a Live action to each relevant control via the set_mapping tool.",
+    "STRICT rules:",
+    "- targetId MUST exist in the provided actions list.",
+    "- The action must accept the control's kind (the 'suits' field).",
+    "- Track actions (volume, pan, mute, solo, arm, select, sends) must land on the control of the RIGHT track (respect the strip number).",
+    "- Never invent an id. Respond only via the tool.",
+    `- Write the 'note' in ${lang === "fr" ? "French" : "English"}.`,
   ].join("\n");
 
   const userPayload = {

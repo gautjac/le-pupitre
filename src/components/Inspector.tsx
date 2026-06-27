@@ -1,13 +1,7 @@
 import type { ControlDef, ControlState, MidiBinding, MidiType } from "../model/types.ts";
-import { TARGET_BY_ID, targetsForKind, type TargetDef } from "../model/targets.ts";
+import { TARGET_BY_ID, targetsForKind, type CatKey, type TargetDef } from "../model/targets.ts";
 import type { UseMidi } from "../midi/useMidi.ts";
-import { bindingLabel } from "../lib/format.ts";
-
-const KIND_LABEL: Record<string, string> = {
-  fader: "Fader (continu)",
-  knob: "Potentiomètre (continu)",
-  button: "Bouton (momentané)",
-};
+import { useI18n } from "../i18n/lang.tsx";
 
 export function Inspector({
   control,
@@ -28,35 +22,41 @@ export function Inspector({
   onLearn: () => void;
   onCancelLearn: () => void;
 }) {
+  const { t, lc } = useI18n();
+
   if (!control || !state) {
     return (
       <aside className="panel h-fit p-5 lg:sticky lg:top-[84px]">
-        <p className="text-sm text-ink-dim">Sélectionne un contrôle sur le pupitre pour l'éditer.</p>
+        <p className="text-sm text-ink-dim">{t("inspector.empty")}</p>
       </aside>
     );
   }
 
   const target = TARGET_BY_ID[state.targetId];
-  const options = targetsForKind(control.kind);
-  const grouped = groupByCategory(options);
+  const grouped = groupByCategory(targetsForKind(control.kind));
   const b = state.binding;
-
   const patch = (p: Partial<MidiBinding>) => onBinding({ ...b, ...p });
+
+  const kindLabel = t(`inspector.kind.${control.kind}` as const);
+  const bindingLabel = t("binding.label", {
+    type: b.type === "cc" ? "CC" : "Note",
+    n: b.number,
+    ch: b.channel + 1,
+  });
 
   return (
     <aside className="panel h-fit p-5 lg:sticky lg:top-[84px]">
       <div className="mb-4">
         <div className="text-[11px] font-mono uppercase tracking-wider text-ink-dim">
-          {KIND_LABEL[control.kind]}
-          {control.strip ? ` · piste ${control.strip}` : ""}
+          {kindLabel}
+          {control.strip ? t("inspector.trackSuffix", { n: control.strip }) : ""}
         </div>
-        <h2 className="font-display text-xl font-bold text-ink">{control.label}</h2>
-        <div className="mt-1 text-xs text-ink-soft">{bindingLabel(b)}</div>
+        <h2 className="font-display text-xl font-bold text-ink">{lc(control.label)}</h2>
+        <div className="mt-1 text-xs text-ink-soft">{bindingLabel}</div>
       </div>
 
-      {/* Target picker */}
       <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-ink-dim">
-        Action dans Live
+        {t("inspector.actionLabel")}
       </label>
       <select
         value={state.targetId}
@@ -64,23 +64,22 @@ export function Inspector({
         className="w-full rounded-lg border border-desk-line bg-desk-rail px-3 py-2.5 text-sm text-ink outline-none focus:border-cyan-deep focus:shadow-glowcyan"
       >
         {grouped.map(([category, items]) => (
-          <optgroup key={category} label={category}>
-            {items.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.label}
+          <optgroup key={category} label={t(`cat.${category}` as const)}>
+            {items.map((tg) => (
+              <option key={tg.id} value={tg.id}>
+                {lc(tg.label)}
               </option>
             ))}
           </optgroup>
         ))}
       </select>
-      {target && <p className="mt-1.5 text-xs text-ink-dim">{target.hint}</p>}
+      {target && <p className="mt-1.5 text-xs text-ink-dim">{lc(target.hint)}</p>}
 
       <hr className="my-5 border-desk-edge" />
 
-      {/* MIDI binding */}
       <div className="mb-1.5 flex items-center justify-between">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-dim">
-          Signal MIDI
+          {t("inspector.midiSignal")}
         </span>
         <button
           className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
@@ -90,32 +89,32 @@ export function Inspector({
           }`}
           onClick={learning ? onCancelLearn : onLearn}
         >
-          {learning ? "● En écoute… (annuler)" : "Apprendre (MIDI Learn)"}
+          {learning ? t("inspector.learning") : t("inspector.learn")}
         </button>
       </div>
       {learning && (
         <p className="mb-2 rounded-md bg-amber/10 px-2.5 py-1.5 text-xs text-amber-glow">
-          Bouge ou presse ce contrôle sur le nanoKONTROL Studio…
+          {t("inspector.learnHint")}
         </p>
       )}
 
       <div className="grid grid-cols-3 gap-2">
-        <Field label="Type">
+        <Field label={t("inspector.type")}>
           <div className="flex overflow-hidden rounded-md border border-desk-line">
-            {(["cc", "note"] as MidiType[]).map((t) => (
+            {(["cc", "note"] as MidiType[]).map((tp) => (
               <button
-                key={t}
-                onClick={() => patch({ type: t })}
+                key={tp}
+                onClick={() => patch({ type: tp })}
                 className={`flex-1 px-2 py-1.5 text-xs font-semibold transition ${
-                  b.type === t ? "bg-desk-edge text-ink" : "bg-desk-rail text-ink-dim hover:text-ink"
+                  b.type === tp ? "bg-desk-edge text-ink" : "bg-desk-rail text-ink-dim hover:text-ink"
                 }`}
               >
-                {t === "cc" ? "CC" : "Note"}
+                {tp === "cc" ? "CC" : "Note"}
               </button>
             ))}
           </div>
         </Field>
-        <Field label="Canal">
+        <Field label={t("inspector.channel")}>
           <NumberInput
             value={b.channel + 1}
             min={1}
@@ -123,7 +122,7 @@ export function Inspector({
             onChange={(n) => patch({ channel: clamp(n, 1, 16) - 1 })}
           />
         </Field>
-        <Field label={b.type === "cc" ? "N° CC" : "N° note"}>
+        <Field label={b.type === "cc" ? t("inspector.ccNum") : t("inspector.noteNum")}>
           <NumberInput
             value={b.number}
             min={0}
@@ -139,13 +138,13 @@ export function Inspector({
         disabled={midi.status !== "ready" || control.kind !== "button"}
         title={
           control.kind !== "button"
-            ? "Test LED réservé aux boutons"
+            ? t("inspector.testLed.notButton")
             : midi.status !== "ready"
-              ? "Connecte le MIDI d'abord"
-              : "Allume brièvement la LED sur le contrôleur"
+              ? t("inspector.testLed.notReady")
+              : t("inspector.testLed.ready")
         }
       >
-        Tester la LED
+        {t("inspector.testLed")}
       </button>
     </aside>
   );
@@ -190,12 +189,12 @@ function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
 }
 
-function groupByCategory(items: TargetDef[]): [string, TargetDef[]][] {
-  const order = ["Aucune", "Mixage", "Transport", "Navigation", "Édition"];
-  const map = new Map<string, TargetDef[]>();
-  for (const t of items) {
-    if (!map.has(t.category)) map.set(t.category, []);
-    map.get(t.category)!.push(t);
+function groupByCategory(items: TargetDef[]): [CatKey, TargetDef[]][] {
+  const order: CatKey[] = ["none", "mix", "transport", "nav", "edit"];
+  const map = new Map<CatKey, TargetDef[]>();
+  for (const tg of items) {
+    if (!map.has(tg.category)) map.set(tg.category, []);
+    map.get(tg.category)!.push(tg);
   }
   return [...map.entries()].sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
 }

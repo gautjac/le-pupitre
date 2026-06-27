@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { GenerateResult } from "../generator/python.ts";
+import { useI18n } from "../i18n/lang.tsx";
 
 const KEYWORDS = [
   "from",
@@ -52,6 +53,7 @@ export function CodePreview({
   generated: GenerateResult;
   onExport: () => void;
 }) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -75,14 +77,14 @@ export function CodePreview({
       )}
       <div className="flex items-center justify-between border-b border-desk-edge bg-desk-rail/40 px-4 py-2">
         <span className="text-xs text-ink-dim">
-          {generated.files.length} fichiers · {generated.scriptName}/
+          {t("code.files", { n: generated.files.length, name: generated.scriptName })}
         </span>
         <div className="flex gap-2">
           <button className="btn px-3 py-1.5 text-xs" onClick={copy}>
-            {copied ? "Copié ✓" : "Copier"}
+            {copied ? t("code.copied") : t("code.copy")}
           </button>
           <button className="btn btn-amber px-3 py-1.5 text-xs font-semibold" onClick={onExport}>
-            Télécharger .zip
+            {t("code.download")}
           </button>
         </div>
       </div>

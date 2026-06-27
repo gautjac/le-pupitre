@@ -24,6 +24,8 @@ Ableton. No Python required. Everything runs locally in the browser.
 - **One-click export.** Download a `.zip` containing the ready-to-install script folder + a README.
 - **Optional AI auto-map.** Describe your workflow in plain French/English and Claude proposes a full
   mapping (validated server-side against the control types).
+- **Bilingual (EN/FR).** Full English and Québécois-French UI with a one-click toggle in the header;
+  defaults to your browser language and remembers your choice.
 
 ## The generated script
 

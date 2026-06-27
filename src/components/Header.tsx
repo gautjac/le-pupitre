@@ -1,12 +1,14 @@
 import type { DeviceDef, Mapping } from "../model/types.ts";
 import type { UseMidi } from "../midi/useMidi.ts";
+import { useI18n } from "../i18n/lang.tsx";
+import type { Lang, StrKey } from "../i18n/core.ts";
 
-const STATUS: Record<string, { dot: string; label: string }> = {
-  unsupported: { dot: "bg-rose", label: "Web MIDI non supporté" },
-  idle: { dot: "bg-ink-dim", label: "MIDI hors ligne" },
-  requesting: { dot: "bg-amber animate-pulse2", label: "Connexion…" },
-  ready: { dot: "bg-lime", label: "MIDI connecté" },
-  denied: { dot: "bg-rose", label: "Accès MIDI refusé" },
+const STATUS_KEY: Record<string, { dot: string; key: StrKey }> = {
+  unsupported: { dot: "bg-rose", key: "status.unsupported" },
+  idle: { dot: "bg-ink-dim", key: "status.idle" },
+  requesting: { dot: "bg-amber animate-pulse2", key: "status.requesting" },
+  ready: { dot: "bg-lime", key: "status.ready" },
+  denied: { dot: "bg-rose", key: "status.denied" },
 };
 
 export function Header({
@@ -36,7 +38,8 @@ export function Header({
   onReset: () => void;
   onAutoMap: () => void;
 }) {
-  const st = STATUS[midi.status] ?? STATUS.idle;
+  const { t, lang, setLang } = useI18n();
+  const st = STATUS_KEY[midi.status] ?? STATUS_KEY.idle;
   const canConnect = midi.status === "idle" || midi.status === "denied";
 
   return (
@@ -46,10 +49,8 @@ export function Header({
         <div className="flex items-center gap-3">
           <Logo />
           <div className="leading-tight">
-            <div className="font-display text-lg font-bold tracking-tight text-ink">
-              Le Pupitre
-            </div>
-            <div className="text-[11px] text-ink-dim">surfaces de contrôle · Ableton Live</div>
+            <div className="font-display text-lg font-bold tracking-tight text-ink">Le Pupitre</div>
+            <div className="text-[11px] text-ink-dim">{t("header.tagline")}</div>
           </div>
         </div>
 
@@ -60,16 +61,12 @@ export function Header({
 
         {/* Script name + Live version */}
         <div className="flex items-center gap-2">
-          <label className="sr-only" htmlFor="scriptName">
-            Nom du script
-          </label>
           <input
-            id="scriptName"
             value={mapping.scriptName}
             onChange={(e) => onScriptName(e.target.value)}
             spellCheck={false}
             className="w-52 rounded-lg border border-desk-line bg-desk-rail px-3 py-2 font-mono text-sm text-ink outline-none focus:border-cyan-deep focus:shadow-glowcyan"
-            aria-label="Nom du script"
+            aria-label={t("header.scriptNameAria")}
           />
           <div className="flex overflow-hidden rounded-lg border border-desk-line">
             {(["12", "11"] as const).map((v) => (
@@ -81,7 +78,7 @@ export function Header({
                     ? "bg-desk-edge text-ink"
                     : "bg-desk-rail text-ink-dim hover:text-ink"
                 }`}
-                title={`Ableton Live ${v}`}
+                title={t("header.liveVersionTitle", { v })}
               >
                 L{v}
               </button>
@@ -91,35 +88,62 @@ export function Header({
 
         {/* Right cluster */}
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <span className="chip" title={st.label}>
+          <LangToggle lang={lang} setLang={setLang} title={t("header.langTitle")} />
+          <span className="chip" title={t(st.key)}>
             <span className={`h-2 w-2 rounded-full ${st.dot}`} />
-            {st.label}
+            {t(st.key)}
           </span>
           {canConnect && (
             <button className="btn btn-cyan" onClick={onRequestMidi}>
-              Connecter MIDI
+              {t("header.connectMidi")}
             </button>
           )}
           <span className="chip border-desk-line/60 text-ink-soft">
-            {assignedCount} assignés
+            {t("header.assigned", { n: assignedCount })}
             {warnings.length > 0 && (
               <span className="ml-1 text-amber-glow" title={warnings.join("\n")}>
                 · {warnings.length}⚠
               </span>
             )}
           </span>
-          <button className="btn" onClick={onAutoMap} title="Décris ton workflow, Claude propose un mappage">
-            <SparkIcon /> Auto-map IA
+          <button className="btn" onClick={onAutoMap} title={t("header.autoMapTitle")}>
+            <SparkIcon /> {t("header.autoMap")}
           </button>
           <button className="btn" onClick={onReset}>
-            Réinit.
+            {t("header.reset")}
           </button>
           <button className="btn btn-amber font-semibold" onClick={onExport} disabled={exporting}>
-            {exporting ? "Préparation…" : "Exporter .zip"}
+            {exporting ? t("header.exporting") : t("header.export")}
           </button>
         </div>
       </div>
     </header>
+  );
+}
+
+function LangToggle({
+  lang,
+  setLang,
+  title,
+}: {
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  title: string;
+}) {
+  return (
+    <div className="flex overflow-hidden rounded-lg border border-desk-line" title={title}>
+      {(["en", "fr"] as Lang[]).map((l) => (
+        <button
+          key={l}
+          onClick={() => setLang(l)}
+          className={`px-2.5 py-2 text-xs font-bold uppercase transition ${
+            lang === l ? "bg-desk-edge text-ink" : "bg-desk-rail text-ink-dim hover:text-ink"
+          }`}
+        >
+          {l}
+        </button>
+      ))}
+    </div>
   );
 }
 

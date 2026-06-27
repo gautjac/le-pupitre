@@ -1,5 +1,7 @@
 // Core data model shared by the editor UI and the Python script generator.
 
+import type { Loc } from "../i18n/core.ts";
+
 export type MidiType = "cc" | "note";
 
 /** A physical control's MIDI signature. channel is 0-based (0–15); shown as 1–16. */
@@ -16,7 +18,7 @@ export type ControlGroup = "strip" | "transport" | "nav";
 
 export interface ControlDef {
   id: string; // stable id, e.g. "fader.1", "btn.solo.3", "transport.play"
-  label: string; // human label, e.g. "Fader 1"
+  label: Loc; // human label, e.g. "Fader 1"
   short: string; // tiny label for the on-device chip, e.g. "S", "M", "REC"
   kind: ControlKind;
   group: ControlGroup;
