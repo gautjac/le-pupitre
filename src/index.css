@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(120% 90% at 50% -10%, #1a1f2a 0%, #0c0e12 60%) fixed;
+  color: theme("colors.ink.DEFAULT");
+  font-family: theme("fontFamily.sans");
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: theme("fontFamily.display");
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-desk-edge bg-desk-panel shadow-panel;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-desk-line px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-ink-soft;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-desk-line bg-desk-rail px-3.5 py-2 text-sm font-medium text-ink-soft transition
+      hover:border-desk-line/0 hover:bg-desk-edge hover:text-ink
+      focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/60
+      disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-amber {
+    @apply border-amber-deep/60 bg-amber/15 text-amber-glow hover:bg-amber/25 hover:text-amber-glow;
+  }
+  .btn-cyan {
+    @apply border-cyan-deep/60 bg-cyan/15 text-cyan-glow hover:bg-cyan/25 hover:text-cyan-glow;
+  }
+  .seg {
+    @apply rounded-md px-2.5 py-1 text-xs font-medium text-ink-dim transition hover:text-ink;
+  }
+  .seg-on {
+    @apply bg-desk-edge text-ink shadow-slot;
+  }
+}
+
+/* Tidy scrollbars in the code preview / panels */
+.scroll-thin::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #2e3543;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.scroll-thin::-webkit-scrollbar-thumb:hover {
+  background: #3a4150;
+  background-clip: padding-box;
+}
+
+/* A subtle brushed-metal sheen for the desk header */
+.brushed {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.015) 0px,
+    rgba(255, 255, 255, 0.015) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
