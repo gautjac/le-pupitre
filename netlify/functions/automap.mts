@@ -140,20 +140,32 @@ async function propose(
     `- Write the 'note' in ${lang === "fr" ? "French" : "English"}.`,
   ].join("\n");
 
-  const userPayload = {
-    instruction,
-    controls,
-    targets,
-  };
-
+  // The device payload (controls + targets) is identical on every request for a
+  // given device and language, so it comes first and carries the cache
+  // breakpoint: tools + system + payload are then read from cache on each
+  // re-propose and across visitors. The free-text instruction, which changes
+  // every time, follows it in its own block (blocks are joined with no
+  // separator, hence the leading newline).
   const res = await client.messages.create({
     model: MODEL,
     max_tokens: 2000,
     system,
     tools: [tool],
     tool_choice: { type: "tool", name: "set_mapping" },
-    messages: [{ role: "user", content: JSON.stringify(userPayload) }],
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: JSON.stringify({ controls, targets }), cache_control: { type: "ephemeral" } },
+          { type: "text", text: "\n" + JSON.stringify({ instruction }) },
+        ],
+      },
+    ],
   });
+  const u = res.usage;
+  console.log(
+    `[automap] ${lang}: input=${u.input_tokens} cache_read=${u.cache_read_input_tokens ?? 0} cache_write=${u.cache_creation_input_tokens ?? 0} output=${u.output_tokens}`,
+  );
 
   const block = res.content.find((b) => b.type === "tool_use") as
     | Anthropic.ToolUseBlock
